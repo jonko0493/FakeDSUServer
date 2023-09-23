@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.7.34024.191
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FakeDSUServer", "FakeDSUServer\FakeDSUServer.csproj", "{40402D0B-5043-4F05-957E-E86FCD6C9119}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FakeDSUServerCLI", "FakeDSUServerCLI\FakeDSUServerCLI.csproj", "{EEAC4391-F6BB-4A7B-BC83-58FAE52C0BEB}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{40402D0B-5043-4F05-957E-E86FCD6C9119}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{40402D0B-5043-4F05-957E-E86FCD6C9119}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{40402D0B-5043-4F05-957E-E86FCD6C9119}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{40402D0B-5043-4F05-957E-E86FCD6C9119}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EEAC4391-F6BB-4A7B-BC83-58FAE52C0BEB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EEAC4391-F6BB-4A7B-BC83-58FAE52C0BEB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EEAC4391-F6BB-4A7B-BC83-58FAE52C0BEB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EEAC4391-F6BB-4A7B-BC83-58FAE52C0BEB}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {7FDB4884-7CC5-4503-8AC2-159FD402A88D}
+	EndGlobalSection
+EndGlobal
