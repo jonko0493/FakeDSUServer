@@ -37,6 +37,22 @@ namespace FakeDSUServerCLI
             return PacketCount++;
         }
 
+        public void ToggleDPadUp()
+        {
+            ButtonSet1 ^= IWiimote.Buttons1.DPadUp;
+        }
+        public void ToggleDPadDown()
+        {
+            ButtonSet1 ^= IWiimote.Buttons1.DPadDown;
+        }
+        public void ToggleDPadLeft()
+        {
+            ButtonSet1 ^= IWiimote.Buttons1.DPadLeft;
+        }
+        public void ToggleDPadRight()
+        {
+            ButtonSet1 ^= IWiimote.Buttons1.DPadRight;
+        }
         public void ToggleA()
         {
             ButtonSet2 ^= IWiimote.Buttons2.A;
@@ -44,6 +60,26 @@ namespace FakeDSUServerCLI
         public void ToggleB()
         {
             ButtonSet2 ^= IWiimote.Buttons2.B;
+        }
+        public void Toggle1()
+        {
+            ButtonSet2 ^= IWiimote.Buttons2.One;
+        }
+        public void Toggle2()
+        {
+            ButtonSet2 ^= IWiimote.Buttons2.Two;
+        }
+        public void TogglePlus()
+        {
+            ButtonSet2 ^= IWiimote.Buttons2.Plus;
+        }
+        public void ToggleMinus()
+        {
+            ButtonSet2 ^= IWiimote.Buttons2.Minus;
+        }
+        public void ToggleHome()
+        {
+            HomeButtonPressed = !HomeButtonPressed;
         }
     }
 }

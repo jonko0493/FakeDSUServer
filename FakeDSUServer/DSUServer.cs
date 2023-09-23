@@ -13,7 +13,9 @@ namespace FakeDSUServer
 {
     public class DSUServer
     {
-        //private Timer? _wiimotePollTimer;
+        private Timer? _wiimotePollTimer;
+        private Timer? _disconnectTimer;
+        private IPEndPoint? _cachedEndPoint;
         private readonly ILogger _logger;
         private Socket? _udpSocket;
         private uint _serverId;
@@ -50,16 +52,18 @@ namespace FakeDSUServer
         public void ConnectWiimote(IWiimote wiimote)
         {
             Wiimotes.Add(wiimote);
-            //if (_wiimotePollTimer is null)
-            //{
-            //    _wiimotePollTimer = new(5);
-            //    _wiimotePollTimer.Elapsed += PollWiimotes;
-            //    if (Running)
-            //    {
-            //        _wiimotePollTimer.Enabled = true;
-            //        _wiimotePollTimer.Start();
-            //    }
-            //}
+            if (_wiimotePollTimer is null)
+            {
+                _wiimotePollTimer = new(5);
+                _wiimotePollTimer.Elapsed += PollWiimotes;
+                _disconnectTimer = new(TimeSpan.FromMinutes(1));
+                _disconnectTimer.Elapsed += DisconnectWiimotes;
+                if (Running)
+                {
+                    _wiimotePollTimer.Enabled = true;
+                    _wiimotePollTimer.Start();
+                }
+            }
         }
 
         public void Start(IPAddress address, int port = 26760)
@@ -71,11 +75,11 @@ namespace FakeDSUServer
                     _udpSocket.Close();
                     _udpSocket = null;
                 }
-                //if (_wiimotePollTimer is not null)
-                //{
-                //    _wiimotePollTimer.Stop();
-                //    _wiimotePollTimer.Enabled = false;
-                //}
+                if (_wiimotePollTimer is not null)
+                {
+                    _wiimotePollTimer.Stop();
+                    _wiimotePollTimer.Enabled = false;
+                }
                 Running = false;
             }
 
@@ -96,11 +100,11 @@ namespace FakeDSUServer
             _serverId = (uint)new Random().Next(int.MinValue, int.MaxValue);
 
             Running = true;
-            //if (_wiimotePollTimer is not null)
-            //{
-            //    _wiimotePollTimer.Enabled = true;
-            //    _wiimotePollTimer.Start();
-            //}
+            if (_wiimotePollTimer is not null)
+            {
+                _wiimotePollTimer.Enabled = true;
+                _wiimotePollTimer.Start();
+            }
             _logger.LogInformation("Successfully started server!");
 
             StartReceive();
@@ -114,11 +118,11 @@ namespace FakeDSUServer
                 _udpSocket.Close();
                 _udpSocket = null;
             }
-            //if (_wiimotePollTimer is not null)
-            //{
-            //    _wiimotePollTimer.Enabled = false;
-            //    _wiimotePollTimer.Stop();
-            //}
+            if (_wiimotePollTimer is not null)
+            {
+                _wiimotePollTimer.Enabled = false;
+                _wiimotePollTimer.Stop();
+            }
         }
 
         private void StartReceive()
@@ -257,6 +261,7 @@ namespace FakeDSUServer
                         for (byte i = 0; i < numPadRequests && i < Wiimotes.Count; i++)
                         {
                             List<byte> outputPortsData = new();
+                            outputPortsData.AddRange(BitConverter.GetBytes((uint)ResponseType.DSUS_PortInfo));
                             AddInitialOutputPacketData(outputPortsData, Wiimotes[i]);
                             outputPortsData.Add(0);
 
@@ -270,6 +275,12 @@ namespace FakeDSUServer
                         byte idToReg = localMessage[currentIndex++];
                         PhysicalAddress macToReg = new(localMessage.Skip(currentIndex).Take(6).ToArray());
                         currentIndex += 6;
+                        if (_cachedEndPoint is null)
+                        {
+                            _cachedEndPoint = clientEndPoint;
+                        }
+                        _disconnectTimer?.Stop();
+                        _disconnectTimer?.Start();
                         break;
                 }
             }
@@ -281,39 +292,49 @@ namespace FakeDSUServer
 
         private void PollWiimotes(object? sender, ElapsedEventArgs e)
         {
-            foreach (IWiimote wiimote in Wiimotes)
+            if (_cachedEndPoint is not null)
             {
-                List<byte> packetData = new();
-                AddInitialOutputPacketData(packetData, wiimote);
-                packetData.Add(1);
-                packetData.AddRange(BitConverter.GetBytes(wiimote.GetPacketNumber()));
+                foreach (IWiimote wiimote in Wiimotes)
+                {
+                    List<byte> packetData = new();
+                    packetData.AddRange(BitConverter.GetBytes((uint)ResponseType.DSUS_PadData));
+                    AddInitialOutputPacketData(packetData, wiimote);
+                    packetData.Add(1);
+                    packetData.AddRange(BitConverter.GetBytes(wiimote.GetPacketNumber()));
 
-                packetData.Add((byte)wiimote.ButtonSet1);
-                packetData.Add((byte)wiimote.ButtonSet2);
-                packetData.Add((byte)(wiimote.HomeButtonPressed ? 1 : 0));
-                packetData.Add(0);
-                packetData.AddRange(new byte[] { 128, 128, 128, 128 }); // sticks
-                packetData.Add((byte)(wiimote.ButtonSet1.HasFlag(IWiimote.Buttons1.DPadLeft) ? 255 : 0));
-                packetData.Add((byte)(wiimote.ButtonSet1.HasFlag(IWiimote.Buttons1.DPadDown) ? 255 : 0));
-                packetData.Add((byte)(wiimote.ButtonSet1.HasFlag(IWiimote.Buttons1.DPadRight) ? 255 : 0));
-                packetData.Add((byte)(wiimote.ButtonSet1.HasFlag(IWiimote.Buttons1.DPadUp) ? 255 : 0));
-                packetData.Add((byte)(wiimote.ButtonSet2.HasFlag(IWiimote.Buttons2.One) ? 255 : 0));
-                packetData.Add((byte)(wiimote.ButtonSet2.HasFlag(IWiimote.Buttons2.B) ? 255 : 0));
-                packetData.Add((byte)(wiimote.ButtonSet2.HasFlag(IWiimote.Buttons2.A) ? 255 : 0));
-                packetData.Add((byte)(wiimote.ButtonSet2.HasFlag(IWiimote.Buttons2.Two) ? 255 : 0));
-                packetData.Add((byte)(wiimote.ButtonSet2.HasFlag(IWiimote.Buttons2.Plus) ? 255 : 0));
-                packetData.Add((byte)(wiimote.ButtonSet2.HasFlag(IWiimote.Buttons2.Minus) ? 255 : 0));
-                packetData.AddRange(new byte[2]); // R2/L2
-                packetData.AddRange(new byte[12]); // touch pads
-                packetData.AddRange(BitConverter.GetBytes(DateTimeOffset.Now.Ticks));
-                packetData.AddRange(BitConverter.GetBytes(wiimote.Accelerometer.Y));
-                packetData.AddRange(BitConverter.GetBytes(-wiimote.Accelerometer.Z));
-                packetData.AddRange(BitConverter.GetBytes(wiimote.Accelerometer.X));
-                packetData.AddRange(BitConverter.GetBytes(wiimote.Gyro.Y));
-                packetData.AddRange(BitConverter.GetBytes(wiimote.Gyro.Z));
-                packetData.AddRange(BitConverter.GetBytes(wiimote.Gyro.X));
-                _logger.LogInformation($"Sent state data for wiimote {wiimote.Id}");
+                    packetData.Add((byte)wiimote.ButtonSet1);
+                    packetData.Add((byte)wiimote.ButtonSet2);
+                    packetData.Add((byte)(wiimote.HomeButtonPressed ? 1 : 0));
+                    packetData.Add(0);
+                    packetData.AddRange(new byte[] { 128, 128, 128, 128 }); // sticks
+                    packetData.Add((byte)(wiimote.ButtonSet1.HasFlag(IWiimote.Buttons1.DPadLeft) ? 255 : 0));
+                    packetData.Add((byte)(wiimote.ButtonSet1.HasFlag(IWiimote.Buttons1.DPadDown) ? 255 : 0));
+                    packetData.Add((byte)(wiimote.ButtonSet1.HasFlag(IWiimote.Buttons1.DPadRight) ? 255 : 0));
+                    packetData.Add((byte)(wiimote.ButtonSet1.HasFlag(IWiimote.Buttons1.DPadUp) ? 255 : 0));
+                    packetData.Add((byte)(wiimote.ButtonSet2.HasFlag(IWiimote.Buttons2.One) ? 255 : 0));
+                    packetData.Add((byte)(wiimote.ButtonSet2.HasFlag(IWiimote.Buttons2.B) ? 255 : 0));
+                    packetData.Add((byte)(wiimote.ButtonSet2.HasFlag(IWiimote.Buttons2.A) ? 255 : 0));
+                    packetData.Add((byte)(wiimote.ButtonSet2.HasFlag(IWiimote.Buttons2.Two) ? 255 : 0));
+                    packetData.Add((byte)(wiimote.ButtonSet2.HasFlag(IWiimote.Buttons2.Plus) ? 255 : 0));
+                    packetData.Add((byte)(wiimote.ButtonSet2.HasFlag(IWiimote.Buttons2.Minus) ? 255 : 0));
+                    packetData.AddRange(new byte[2]); // R2/L2
+                    packetData.AddRange(new byte[12]); // touch pads
+                    packetData.AddRange(BitConverter.GetBytes(DateTimeOffset.Now.Ticks));
+                    packetData.AddRange(BitConverter.GetBytes(wiimote.Accelerometer.Y));
+                    packetData.AddRange(BitConverter.GetBytes(-wiimote.Accelerometer.Z));
+                    packetData.AddRange(BitConverter.GetBytes(wiimote.Accelerometer.X));
+                    packetData.AddRange(BitConverter.GetBytes(wiimote.Gyro.Y));
+                    packetData.AddRange(BitConverter.GetBytes(wiimote.Gyro.Z));
+                    packetData.AddRange(BitConverter.GetBytes(wiimote.Gyro.X));
+
+                    SendPacket(_cachedEndPoint, packetData.ToArray());
+                }
             }
+        }
+
+        private void DisconnectWiimotes(object? sender, ElapsedEventArgs e)
+        {
+            _cachedEndPoint = null;
         }
 
         private static void AddInitialOutputPacketData(List<byte> packetData, IWiimote wiimote)
@@ -345,7 +366,6 @@ namespace FakeDSUServer
             try
             {
                 _udpSocket?.SendTo(packetData.ToArray(), clientEndPoint);
-                _logger.LogInformation($"Packet sent: {string.Join(' ', packetData.Select(b => $"{b:X2}"))}");
             }
             catch (Exception ex)
             {

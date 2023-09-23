@@ -21,12 +21,48 @@ namespace FakeDSUServerCLI
                         loop = false;
                         break;
 
+                    case ConsoleKey.UpArrow:
+                        wiimote.ToggleDPadUp();
+                        break;
+
+                    case ConsoleKey.DownArrow:
+                        wiimote.ToggleDPadDown();
+                        break;
+
+                    case ConsoleKey.LeftArrow:
+                        wiimote.ToggleDPadLeft();
+                        break;
+
+                    case ConsoleKey.RightArrow:
+                        wiimote.ToggleDPadRight();
+                        break;
+
+                    case ConsoleKey.D1:
+                        wiimote.Toggle1();
+                        break;
+
+                    case ConsoleKey.D2:
+                        wiimote.Toggle2();
+                        break;
+
                     case ConsoleKey.A:
                         wiimote.ToggleA();
                         break;
 
                     case ConsoleKey.B:
                         wiimote.ToggleB();
+                        break;
+
+                    case ConsoleKey.Q:
+                        wiimote.ToggleMinus();
+                        break;
+
+                    case ConsoleKey.W:
+                        wiimote.TogglePlus();
+                        break;
+
+                    case ConsoleKey.Spacebar:
+                        wiimote.ToggleHome();
                         break;
                 }
             }
